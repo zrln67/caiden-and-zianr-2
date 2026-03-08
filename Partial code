@@ -1,0 +1,65 @@
+#PySide6 library is needed for this code to run
+from PySide6.QtGui import QIcon
+import sys
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, 
+                             QPushButton, QVBoxLayout, QHBoxLayout, 
+                             QStackedWidget, QLabel, QFrame, QPushButton)
+from PySide6.QtCore import Qt
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Budget Planner!")
+        self.resize(600, 400)
+        self.setWindowIcon(QIcon("project icon.jpg"))
+
+        self.main_layout = QHBoxLayout()
+        self.sidebar = QVBoxLayout()
+
+        self.btn1 = QPushButton("Home")
+        self.btn2 = QPushButton("Settings")
+        self.btn3 = QPushButton("Profile")
+        self.btn4 = QPushButton("Help")
+
+        self.sidebar.addWidget(self.btn1)
+        self.sidebar.addWidget(self.btn2)
+        self.sidebar.addWidget(self.btn3)
+        self.sidebar.addWidget(self.btn4)
+        self.sidebar.addStretch()
+
+        self.content_stack = QStackedWidget()
+
+        self.content_stack.addWidget(self.create_page("Welcome to the HOME Page", "#3498db"))
+        self.content_stack.addWidget(self.create_page("Application SETTINGS", "#2eccb2"))
+        self.content_stack.addWidget(self.create_page("User PROFILE View", "#e67e22"))
+        self.content_stack.addWidget(self.create_page("HELP & Documentation", "#9b59b6"))
+
+        self.btn1.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
+        self.btn2.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
+        self.btn3.clicked.connect(lambda: self.content_stack.setCurrentIndex(2))
+        self.btn4.clicked.connect(lambda: self.content_stack.setCurrentIndex(3))
+
+        container = QWidget()
+        self.main_layout.addLayout(self.sidebar)
+        self.main_layout.addWidget(self.content_stack)
+        container.setLayout(self.main_layout)
+        self.setCentralWidget(container)
+
+    def create_page(self, text, color):
+        """Helper function to create a simple colored page with a label"""
+        page = QFrame()
+        page.setStyleSheet(f"background-color: {color}; border-radius: 10px;")
+        layout = QVBoxLayout()
+        label = QLabel(text)
+        label.setAlignment(Qt.AlignCenter)
+        label.setStyleSheet("color: white; font-size: 20px; font-weight: bold;")
+        layout.addWidget(label)
+        page.setLayout(layout)
+        return page
+
+        
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
