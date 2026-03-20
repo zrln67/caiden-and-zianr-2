@@ -4,32 +4,44 @@
 This is a Python program the helps people track their expense so they dont overspend, saving a lot of money.
 
 ## Features
-- Enter their current balance
+- Sign in or make account
+- Data will be saved
 - Enter their expenses
 - Calculates their current budget
-- Enter how much your things that your going to buy cost, and what benefits does it give you
-- Tells the user if you should buy it
+- Enter how much your item cost and enter item names
+- You can ask ai if you should buy it
 
 ## How to Run the program
-1. Open Python
-2. Download "Budget_tracker.py"
-3. Open terminal or commad prompt
-4. Run the program
+1. Open any ide
+2. Download "Budget planer" zip file
+3. extract it
+4. Open terminal
+5. Download Pyside6
+6. Open folder
+7. Run the program
 
 ## Example output
-Enter your current balance: 10,000
+Enter account name: test acc
+Enter password: 12345
 
-What would you like to do?
-A. Calculate your expenses
-B. Should I buy it?
+Balance: 20,000
+A. Log transaction
+B. transaction history
+B. AI
 --more stuff here soon--
-Pick one: A
+user chooses A
 
-Enter your expenses: 4,000
+Item name: Bag
+Amount: 1,000
 
-Your current balance is 6,000
+A. Add
+B. Spend
+D. Cancel
+user chooses B
 
--- Repeats back to the question--
+Your current balance is 19,000
+
+-- Repeats back to menu--
 
 ## Contributors
 - Zian Relon: Type most of the things
