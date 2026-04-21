@@ -8,7 +8,7 @@ from PySide6.QtGui import QTextCursor
 # ==========================================================
 # CONFIGURATION
 # ==========================================================
-API_KEY = "PLACE API KEY HERE"
+API_KEY = "PLACE YOUR API KEY HERE"
 MODEL_ID = "gemini-3.1-flash-lite-preview"
 DATA_FILE = "users_data.json"
 
@@ -19,7 +19,6 @@ QMainWindow, QWidget {
     font-family: 'Arial'; 
 }
 
-/* Sidebar Navigation */
 #SidebarBox { background-color: #111827; border-radius: 10px; padding: 10px; }
 #DashBtn { background-color: #3B82F6; color: white; border-radius: 8px; padding: 10px; border: none; font-weight: bold; }
 #AIBtn { background-color: #A855F7; color: white; border-radius: 8px; padding: 10px; border: none; font-weight: bold; }
@@ -27,25 +26,20 @@ QMainWindow, QWidget {
 #LogoutBtn { background-color: #F97316; color: white; border-radius: 8px; padding: 10px; border: none; font-weight: bold; }
 #SignupBtn { background-color: #10B981; color: white; border-radius: 8px; padding: 10px; border: none; }
 
-/* Main Content Card */
 #MainCard { background-color: #1E293B; border-radius: 10px; padding: 20px; }
 
-/* Form Inputs */
 QLineEdit, QTextEdit, QComboBox { 
     padding: 10px; background-color: #0F172A; color: white; 
     border: 1px solid #334155; border-radius: 6px; margin: 5px 0;
 }
 
-/* Balance Text */
 #BalanceLabel { color: #22C55E; font-size: 45px; font-weight: bold; background: transparent; }
 #NetWorthLabel { color: #94A3B8; font-size: 16px; background: transparent; }
 
-/* Action Buttons */
 #AddBtn { background-color: #22C55E; color: white; font-weight: bold; border-radius: 8px; height: 40px; }
 #SpendBtn { background-color: #EF4444; color: white; font-weight: bold; border-radius: 8px; height: 40px; }
 #VaultBtn { background-color: #EAB308; color: #000000; font-weight: 900; border-radius: 8px; height: 45px; margin-top: 10px; }
 
-/* History List */
 QListWidget { background-color: #0F172A; border-radius: 6px; border: none; padding: 5px; }
 
 QTableWidget { background-color: #1E293B; color: white; border: 1px solid #334155; }
@@ -88,7 +82,6 @@ class MainWindow(QMainWindow):
     def setup_ui(self):
         self.root_stack = QStackedWidget(); self.setCentralWidget(self.root_stack)
         
-        # LOGIN PAGE
         login_page = QWidget(); l_lay = QVBoxLayout(login_page); l_lay.addStretch()
         title = QLabel("BUDGET PLANNER"); title.setStyleSheet("font-size: 45px; font-weight: bold; color: #3B82F6;")
         l_lay.addWidget(title, alignment=Qt.AlignCenter)
@@ -100,7 +93,6 @@ class MainWindow(QMainWindow):
         for b in (btn_l, btn_s): b.setFixedWidth(320); l_lay.addWidget(b, alignment=Qt.AlignCenter)
         l_lay.addStretch(); self.root_stack.addWidget(login_page)
 
-        # MAIN APP
         main_page = QWidget(); main_hbox = QHBoxLayout(main_page)
         sidebar_w = QFrame(); sidebar_w.setObjectName("SidebarBox"); sidebar_w.setFixedWidth(200)
         sidebar = QVBoxLayout(sidebar_w)
@@ -114,7 +106,6 @@ class MainWindow(QMainWindow):
 
         self.content_stack = QStackedWidget()
         
-        # DASHBOARD
         dash_card = QFrame(); dash_card.setObjectName("MainCard"); d_lay = QVBoxLayout(dash_card)
         self.net_worth_label = QLabel("Total Net Worth: ₱0.00"); self.net_worth_label.setObjectName("NetWorthLabel")
         d_lay.addWidget(self.net_worth_label)
@@ -136,14 +127,12 @@ class MainWindow(QMainWindow):
         self.history_list = QListWidget(); d_lay.addWidget(self.history_list)
         self.content_stack.addWidget(dash_card)
 
-        # AI BOT
         ai_card = QFrame(); ai_card.setObjectName("MainCard"); ai_lay = QVBoxLayout(ai_card)
         self.ai_chat = QTextEdit(); self.ai_chat.setReadOnly(True)
         self.ai_input = QLineEdit(); self.ai_input.setPlaceholderText("Ask AI...")
         self.ai_input.returnPressed.connect(self.ask_ai)
         ai_lay.addWidget(self.ai_chat); ai_lay.addWidget(self.ai_input); self.content_stack.addWidget(ai_card)
 
-        # ERROR GUIDE
         err_card = QFrame(); err_card.setObjectName("MainCard"); err_lay = QVBoxLayout(err_card)
         self.err_table = QTableWidget(4, 3); self.err_table.setHorizontalHeaderLabels(["Code", "Status", "Resolution"])
         self.err_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -161,17 +150,25 @@ class MainWindow(QMainWindow):
 
     def handle_login(self):
         u, p = self.u_in.text().strip(), self.p_in.text().strip()
-        if u in self.users and self.users[u]["password"] == p:
-            self.current_user = u
-            self.refresh_ui(); self.root_stack.setCurrentIndex(1)
-        else: QMessageBox.warning(self, "Error", "Invalid credentials.")
+        if u in self.users:
+            if self.users[u]["password"] == p:
+                self.current_user = u
+                self.refresh_ui(); self.root_stack.setCurrentIndex(1)
+            else:
+                QMessageBox.warning(self, "Login Failed", "Incorrect password. Please try again.")
+        else:
+            QMessageBox.warning(self, "Login Failed", "Username not found. Please create an account.")
 
     def handle_signup(self):
         u, p = self.u_in.text().strip(), self.p_in.text().strip()
-        if not u or not p: return
-        if u in self.users: return
+        if not u or not p:
+            QMessageBox.critical(self, "Signup Error", "Username and Password cannot be empty.")
+            return
+        if u in self.users:
+            QMessageBox.warning(self, "Signup Error", f"The username '{u}' is already taken.")
+            return
         self.users[u] = {"password": p, "balance": 0.0, "history": [], "vault_bal": 0.0, "vault_time": ""}
-        self.save_data(); QMessageBox.information(self, "Success", "Account created!")
+        self.save_data(); QMessageBox.information(self, "Success", "Account created successfully!")
 
     def handle_logout(self): self.current_user = None; self.root_stack.setCurrentIndex(0)
 
@@ -197,12 +194,26 @@ class MainWindow(QMainWindow):
             li.setSizeHint(row.sizeHint()); self.history_list.addItem(li); self.history_list.setItemWidget(li, row)
 
     def process_money(self, mode):
+        raw_amt = self.amt_in.text().strip()
+        if not raw_amt:
+            QMessageBox.critical(self, "Invalid Action", "The Amount field is empty. Please enter a value to proceed.")
+            return
         try:
-            amt = abs(float(self.amt_in.text())); user = self.users[self.current_user]
-            user["balance"] += amt if mode == "plus" else -amt
-            user["history"].insert(0, {"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "mode": mode, "amt": amt, "note": self.item_in.text() or "General"})
-            self.save_data(); self.refresh_ui(); self.amt_in.clear(); self.item_in.clear()
-        except: pass
+            amt = float(raw_amt)
+        except ValueError:
+            QMessageBox.warning(self, "Input Error", f"'{raw_amt}' contains invalid characters. Please enter numbers only.")
+            return
+        if amt <= 0:
+            QMessageBox.information(self, "Calculation Error", "Amount must be greater than zero.")
+            return
+        user = self.users[self.current_user]
+        if mode == "minus" and amt > user["balance"]:
+            reply = QMessageBox.question(self, "Warning", "This will result in a negative balance. Proceed?", QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.No:
+                return
+        user["balance"] += amt if mode == "plus" else -amt
+        user["history"].insert(0, {"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "mode": mode, "amt": amt, "note": self.item_in.text() or "General"})
+        self.save_data(); self.refresh_ui(); self.amt_in.clear(); self.item_in.clear()
 
     def manage_vault(self):
         user = self.users[self.current_user]
