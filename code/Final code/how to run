@@ -10,4 +10,10 @@ Errors:
 
 If there are errors:
 
-*
+Option 1:
+-Press "Ctrl + Shift + P", type "Python: Select Interpreter" and look for the one that says venv\Scripts\python.exe
+  
+  or if that doesn't work:
+
+Option 2:
+-Delete the file named ".venv", go to terminal and type "python -m venv venv", ".\venv\Scripts\Activate.ps1", "pip install pyside6" and "pip install google-genai" in order 
