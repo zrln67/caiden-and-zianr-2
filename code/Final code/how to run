@@ -4,7 +4,8 @@ How to run code:
 2. Make a folder and put the files inside
 3. Go to VSCode or any other IDE's
 4. Click file, open folder then select the folder you created
-5. Find the file named "Smart Budget Planner" and run it
+5. Since google flags api keys that are exposed online and disables it you will have to go to https://aistudio.google.com/api-keys, create a key and copy it
+6. Find the file named "Smart Budget Planner" and replace "PLACE API KEY HERE" at line 11 with your api key
 
 Errors:
 
