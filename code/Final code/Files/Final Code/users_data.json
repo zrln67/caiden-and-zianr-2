@@ -1,0 +1,191 @@
+{
+    "test acc": {
+        "password": "12345",
+        "balance": 1e+42,
+        "history": [
+            {
+                "time": "Now",
+                "mode": "plus",
+                "amt": 0.9,
+                "note": "Vault Penalty Break"
+            },
+            {
+                "time": "LOCKED",
+                "mode": "minus",
+                "amt": 1.0,
+                "note": "Vault Lock"
+            },
+            {
+                "time": "22:27",
+                "mode": "plus",
+                "amt": 1e+42,
+                "note": "yes"
+            },
+            {
+                "time": "21:52",
+                "mode": "minus",
+                "amt": 999999999999999.0,
+                "note": "yes"
+            },
+            {
+                "time": "20:56",
+                "mode": "plus",
+                "amt": 999999999.0,
+                "note": "yes"
+            },
+            {
+                "time": "20:51",
+                "mode": "plus",
+                "amt": 0.0,
+                "note": "Initial Balance"
+            }
+        ],
+        "vault_bal": 0.0,
+        "vault_time": ""
+    },
+    "uiberfbui": {
+        "password": "12345",
+        "balance": 0.0,
+        "history": [
+            {
+                "time": "20:18",
+                "mode": "plus",
+                "amt": 0.0,
+                "note": "Initial Balance"
+            }
+        ],
+        "vault_bal": 0.0,
+        "vault_time": ""
+    },
+    "test acc1": {
+        "password": "12345",
+        "balance": 0.0,
+        "history": [
+            {
+                "time": "LOCKED",
+                "mode": "minus",
+                "amt": 5.0,
+                "note": "Vault Lock"
+            },
+            {
+                "time": "Released",
+                "mode": "plus",
+                "amt": 5.0,
+                "note": "Vault Release"
+            },
+            {
+                "time": "LOCKED",
+                "mode": "minus",
+                "amt": 5.0,
+                "note": "Vault Lock"
+            },
+            {
+                "time": "Released",
+                "mode": "plus",
+                "amt": 5.0,
+                "note": "Vault Release"
+            },
+            {
+                "time": "LOCKED",
+                "mode": "minus",
+                "amt": 5.0,
+                "note": "Vault Lock"
+            },
+            {
+                "time": "Released",
+                "mode": "plus",
+                "amt": 5.0,
+                "note": "Vault Release"
+            },
+            {
+                "time": "LOCKED",
+                "mode": "minus",
+                "amt": 5.0,
+                "note": "Vault Lock"
+            },
+            {
+                "time": "Released",
+                "mode": "plus",
+                "amt": 5.0,
+                "note": "Vault Release"
+            },
+            {
+                "time": "LOCKED",
+                "mode": "minus",
+                "amt": 5.0,
+                "note": "Vault Lock"
+            },
+            {
+                "time": "22:32",
+                "mode": "plus",
+                "amt": 5.0,
+                "note": "Initial Balance"
+            }
+        ],
+        "vault_bal": 5.0,
+        "vault_time": "2026-04-14T22:37:57.762170"
+    },
+    "test acc2": {
+        "password": "12345",
+        "balance": 15.0,
+        "history": [
+            {
+                "time": "2026-04-14 22:45",
+                "mode": "plus",
+                "amt": 5.0,
+                "note": "Vault Release"
+            },
+            {
+                "time": "2026-04-14 22:44",
+                "mode": "none",
+                "amt": 5.0,
+                "note": "Vault Lock Timer"
+            },
+            {
+                "time": "22:42",
+                "mode": "plus",
+                "amt": 5.0,
+                "note": "yes"
+            },
+            {
+                "time": "Released",
+                "mode": "plus",
+                "amt": 5.0,
+                "note": "Vault Release"
+            },
+            {
+                "time": "START",
+                "mode": "none",
+                "amt": 5.0,
+                "note": "Vault Lock Timer"
+            },
+            {
+                "time": "Released",
+                "mode": "plus",
+                "amt": 1.0,
+                "note": "Vault Release"
+            },
+            {
+                "time": "LOCKED",
+                "mode": "minus",
+                "amt": 1.0,
+                "note": "Vault Lock"
+            },
+            {
+                "time": "22:38",
+                "mode": "plus",
+                "amt": 0.0,
+                "note": "Initial Balance"
+            }
+        ],
+        "vault_bal": 0.0,
+        "vault_time": ""
+    },
+    "test": {
+        "password": "12345",
+        "balance": 0.0,
+        "history": [],
+        "vault_bal": 0.0,
+        "vault_time": ""
+    }
+}
