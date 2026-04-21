@@ -8,7 +8,7 @@ from PySide6.QtGui import QTextCursor
 # ==========================================================
 # CONFIGURATION
 # ==========================================================
-API_KEY = "PLACE YOUR API KEY HERE"
+API_KEY = "PASTE API KEY HERE"
 MODEL_ID = "gemini-3.1-flash-lite-preview"
 DATA_FILE = "users_data.json"
 
