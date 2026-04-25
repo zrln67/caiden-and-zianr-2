@@ -1,75 +1,44 @@
-import sys, os, json, re, time
+import sys, os, json
 from datetime import datetime, timedelta
-from google import genai
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import *
-from PySide6.QtGui import QTextCursor
 
-# ==========================================================
-# CONFIGURATION
-# ==========================================================
-API_KEY = "PASTE API KEY HERE"
-MODEL_ID = "gemini-3.1-flash-lite-preview"
+# Configuration & Styling
 DATA_FILE = "users_data.json"
 
+# CSS-like styling for the UI (QSS)
 STYLE_SHEET = """
-QMainWindow, QWidget { 
-    background-color: #0F172A; 
-    color: #E5E7EB; 
-    font-family: 'Arial'; 
-}
-
+QMainWindow, QWidget { background-color: #0F172A; color: #E5E7EB; font-family: 'Arial'; }
 #SidebarBox { background-color: #111827; border-radius: 10px; padding: 10px; }
-#DashBtn { background-color: #3B82F6; color: white; border-radius: 8px; padding: 10px; border: none; font-weight: bold; }
-#AIBtn { background-color: #A855F7; color: white; border-radius: 8px; padding: 10px; border: none; font-weight: bold; }
-#SettingsBtn { background-color: #475569; color: white; border-radius: 8px; padding: 10px; border: none; font-weight: bold; }
+#NavBtn { background-color: #334155; color: white; border-radius: 8px; padding: 10px; border: none; font-weight: bold; margin-bottom: 8px; }
+#NavBtn:hover { background-color: #3B82F6; }
 #LogoutBtn { background-color: #F97316; color: white; border-radius: 8px; padding: 10px; border: none; font-weight: bold; }
-#SignupBtn { background-color: #10B981; color: white; border-radius: 8px; padding: 10px; border: none; }
-
 #MainCard { background-color: #1E293B; border-radius: 10px; padding: 20px; }
-
-QLineEdit, QTextEdit, QComboBox { 
-    padding: 10px; background-color: #0F172A; color: white; 
-    border: 1px solid #334155; border-radius: 6px; margin: 5px 0;
-}
-
-#BalanceLabel { color: #22C55E; font-size: 45px; font-weight: bold; background: transparent; }
-#NetWorthLabel { color: #94A3B8; font-size: 16px; background: transparent; }
-
+QLineEdit, QComboBox, QDateEdit { padding: 10px; background-color: #0F172A; color: white; border: 1px solid #334155; border-radius: 6px; margin: 5px 0; }
+#BalanceLabel { color: #22C55E; font-size: 45px; font-weight: bold; }
 #AddBtn { background-color: #22C55E; color: white; font-weight: bold; border-radius: 8px; height: 40px; }
 #SpendBtn { background-color: #EF4444; color: white; font-weight: bold; border-radius: 8px; height: 40px; }
-#VaultBtn { background-color: #EAB308; color: #000000; font-weight: 900; border-radius: 8px; height: 45px; margin-top: 10px; }
-
-QListWidget { background-color: #0F172A; border-radius: 6px; border: none; padding: 5px; }
-
-QTableWidget { background-color: #1E293B; color: white; border: 1px solid #334155; }
-QHeaderView::section { background-color: #111827; color: #E5E7EB; padding: 5px; border: 1px solid #334155; }
+#ActionBtn { background-color: #3B82F6; color: white; border-radius: 6px; padding: 5px 10px; font-weight: bold; }
+#DeleteBtn { background-color: #EF4444; color: white; border-radius: 6px; padding: 5px 10px; font-weight: bold; }
+#VaultBtn { background-color: #EAB308; color: #000000; font-weight: 900; border-radius: 8px; height: 45px; }
 """
-
-class AIWorker(QThread):
-    finished = Signal(str)
-    def __init__(self, client, model_id, prompt):
-        super().__init__()
-        self.client, self.model_id, self.prompt = client, model_id, prompt
-    def run(self):
-        try:
-            res = self.client.models.generate_content(model=self.model_id, contents=self.prompt)
-            self.finished.emit(res.text if res.text else "AI returned no text.")
-        except Exception as e: self.finished.emit(f"Error: {str(e)}")
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.client = genai.Client(api_key=API_KEY)
-        self.current_model = MODEL_ID
+        # Initialize data and state tracking
         self.users = self.load_data()
         self.current_user = None
+        self.editing_id = None # Tracks if we are creating a new bill or updating an old one
+        
         self.setWindowTitle("Smart Budget Planner")
-        self.resize(1100, 850)
+        self.resize(1200, 950)
         self.setStyleSheet(STYLE_SHEET)
         self.setup_ui()
 
+    # --- DATA PERSISTENCE ---
     def load_data(self):
+        """ Reads the JSON file. Returns an empty dict if file doesn't exist or is corrupt. """
         if os.path.exists(DATA_FILE):
             try:
                 with open(DATA_FILE, "r") as f: return json.load(f)
@@ -77,191 +46,300 @@ class MainWindow(QMainWindow):
         return {}
 
     def save_data(self):
+        """ Writes all user data back to the JSON file. """
         with open(DATA_FILE, "w") as f: json.dump(self.users, f, indent=4)
 
+    # --- UI CONSTRUCTION ---
     def setup_ui(self):
-        self.root_stack = QStackedWidget(); self.setCentralWidget(self.root_stack)
+        """ Builds the multi-page interface using QStackedWidget. """
+        self.root_stack = QStackedWidget() 
+        self.setCentralWidget(self.root_stack)
         
+        # PAGE 1: LOGIN/REGISTER
         login_page = QWidget(); l_lay = QVBoxLayout(login_page); l_lay.addStretch()
         title = QLabel("BUDGET PLANNER"); title.setStyleSheet("font-size: 45px; font-weight: bold; color: #3B82F6;")
         l_lay.addWidget(title, alignment=Qt.AlignCenter)
+        
         self.u_in = QLineEdit(); self.u_in.setPlaceholderText("Username")
         self.p_in = QLineEdit(); self.p_in.setPlaceholderText("Password"); self.p_in.setEchoMode(QLineEdit.Password)
-        for w in (self.u_in, self.p_in): w.setFixedWidth(320); l_lay.addWidget(w, alignment=Qt.AlignCenter)
-        btn_l = QPushButton("Login"); btn_l.setObjectName("DashBtn"); btn_l.clicked.connect(self.handle_login)
-        btn_s = QPushButton("Create Account"); btn_s.setObjectName("SignupBtn"); btn_s.clicked.connect(self.handle_signup)
-        for b in (btn_l, btn_s): b.setFixedWidth(320); l_lay.addWidget(b, alignment=Qt.AlignCenter)
+        
+        btn_l = QPushButton("Login / Make Account"); btn_l.setObjectName("NavBtn"); btn_l.setFixedHeight(45)
+        btn_l.clicked.connect(self.handle_login)
+        
+        for w in (self.u_in, self.p_in, btn_l): 
+            w.setFixedWidth(320); l_lay.addWidget(w, alignment=Qt.AlignCenter)
         l_lay.addStretch(); self.root_stack.addWidget(login_page)
 
+        # PAGE 2: MAIN APPLICATION AREA
         main_page = QWidget(); main_hbox = QHBoxLayout(main_page)
+        
+        # Sidebar Navigation
         sidebar_w = QFrame(); sidebar_w.setObjectName("SidebarBox"); sidebar_w.setFixedWidth(200)
         sidebar = QVBoxLayout(sidebar_w)
-        navs = [("Dashboard", "DashBtn", 0), ("AI Bot", "AIBtn", 1), ("Error Guide", "SettingsBtn", 2)]
-        for text, obj, idx in navs:
-            btn = QPushButton(text); btn.setObjectName(obj)
-            btn.clicked.connect(lambda _, i=idx: self.content_stack.setCurrentIndex(i))
+        for txt, idx in [("Dashboard", 0), ("Recurring Bills", 1), ("One-Time Dues", 2)]:
+            btn = QPushButton(txt); btn.setObjectName("NavBtn")
+            # When clicked, change the sub-page and refresh the lists
+            btn.clicked.connect(lambda _, x=idx: self.content_stack.setCurrentIndex(x) or self.refresh_ui())
             sidebar.addWidget(btn)
+        
         logout = QPushButton("Logout"); logout.setObjectName("LogoutBtn"); logout.clicked.connect(self.handle_logout)
         sidebar.addStretch(); sidebar.addWidget(logout); main_hbox.addWidget(sidebar_w)
 
+        # Sub-Pages Stack (Dashboard, Recurring, One-Time)
         self.content_stack = QStackedWidget()
         
-        dash_card = QFrame(); dash_card.setObjectName("MainCard"); d_lay = QVBoxLayout(dash_card)
-        self.net_worth_label = QLabel("Total Net Worth: ₱0.00"); self.net_worth_label.setObjectName("NetWorthLabel")
-        d_lay.addWidget(self.net_worth_label)
-        d_lay.addWidget(QLabel("YOUR BALANCE:"))
+        # SUB-PAGE: DASHBOARD (Overview & Manual Transactions)
+        dash = QFrame(); dash.setObjectName("MainCard"); d_lay = QVBoxLayout(dash)
+        self.net_worth_label = QLabel("Total Net Worth: ₱0.00")
         self.bal_label = QLabel("₱0.00"); self.bal_label.setObjectName("BalanceLabel")
-        d_lay.addWidget(self.bal_label)
+        d_lay.addWidget(self.net_worth_label); d_lay.addWidget(self.bal_label)
+        
+        d_lay.addWidget(QLabel("⚠️ URGENT DUES:"))
+        self.due_summary = QListWidget(); self.due_summary.setMaximumHeight(120); d_lay.addWidget(self.due_summary)
         
         self.item_in = QLineEdit(); self.item_in.setPlaceholderText("Description")
         self.amt_in = QLineEdit(); self.amt_in.setPlaceholderText("Amount")
         d_lay.addWidget(self.item_in); d_lay.addWidget(self.amt_in)
         
         b_row = QHBoxLayout()
-        add_b = QPushButton("ADD"); add_b.setObjectName("AddBtn"); add_b.clicked.connect(lambda: self.process_money("plus"))
-        exp_b = QPushButton("SPEND"); exp_b.setObjectName("SpendBtn"); exp_b.clicked.connect(lambda: self.process_money("minus"))
-        b_row.addWidget(add_b); b_row.addWidget(exp_b); d_lay.addLayout(b_row)
+        add_b = QPushButton("ADD INCOME"); add_b.setObjectName("AddBtn"); add_b.clicked.connect(lambda: self.process_money("plus"))
+        sp_b = QPushButton("SPEND MONEY"); sp_b.setObjectName("SpendBtn"); sp_b.clicked.connect(lambda: self.process_money("minus"))
+        b_row.addWidget(add_b); b_row.addWidget(sp_b); d_lay.addLayout(b_row)
         
-        v_btn = QPushButton("INCOME VAULT"); v_btn.setObjectName("VaultBtn"); v_btn.clicked.connect(self.manage_vault)
-        d_lay.addWidget(v_btn); d_lay.addWidget(QLabel("HISTORY"))
+        # Vault feature: Locks money away for a short period
+        self.v_btn = QPushButton("INCOME VAULT"); self.v_btn.setObjectName("VaultBtn"); self.v_btn.clicked.connect(self.manage_vault)
+        d_lay.addWidget(self.v_btn); d_lay.addWidget(QLabel("HISTORY:"))
+        
         self.history_list = QListWidget(); d_lay.addWidget(self.history_list)
-        self.content_stack.addWidget(dash_card)
+        self.content_stack.addWidget(dash)
 
-        ai_card = QFrame(); ai_card.setObjectName("MainCard"); ai_lay = QVBoxLayout(ai_card)
-        self.ai_chat = QTextEdit(); self.ai_chat.setReadOnly(True)
-        self.ai_input = QLineEdit(); self.ai_input.setPlaceholderText("Ask AI...")
-        self.ai_input.returnPressed.connect(self.ask_ai)
-        ai_lay.addWidget(self.ai_chat); ai_lay.addWidget(self.ai_input); self.content_stack.addWidget(ai_card)
+        # SUB-PAGE: RECURRING BILLS (Manager for Subs/Rent)
+        rec_card = QFrame(); rec_card.setObjectName("MainCard"); r_lay = QVBoxLayout(rec_card)
+        r_lay.addWidget(QLabel("RECURRING BILLS MANAGER"))
+        self.r_name = QLineEdit(); self.r_name.setPlaceholderText("Bill Name")
+        self.r_amt = QLineEdit(); self.r_amt.setPlaceholderText("Amount")
+        self.r_date = QDateEdit(); self.r_date.setCalendarPopup(True); self.r_date.setDate(datetime.now().date())
+        self.r_cycle = QComboBox(); self.r_cycle.addItems(["Daily", "Weekly", "Monthly", "Yearly"])
+        self.r_mode = QComboBox(); self.r_mode.addItems(["Manual", "Automatic"])
+        self.save_r_btn = QPushButton("SAVE RECURRING BILL"); self.save_r_btn.setObjectName("AddBtn"); self.save_r_btn.clicked.connect(self.save_recurring)
+        
+        for w in (self.r_name, self.r_amt, self.r_date, self.r_cycle, self.r_mode, self.save_r_btn): r_lay.addWidget(w)
+        self.rec_list = QListWidget(); r_lay.addWidget(self.rec_list)
+        self.content_stack.addWidget(rec_card)
 
-        err_card = QFrame(); err_card.setObjectName("MainCard"); err_lay = QVBoxLayout(err_card)
-        self.err_table = QTableWidget(4, 3); self.err_table.setHorizontalHeaderLabels(["Code", "Status", "Resolution"])
-        self.err_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        err_data = [["404", "Model Missing", "Update AI"], ["503", "Overloaded", "Wait"], ["401", "Invalid Key", "Check API"], ["ValueErr", "Bad Input", "Numbers Only"]]
-        for r, row in enumerate(err_data):
-            for c, val in enumerate(row): 
-                it = QTableWidgetItem(val); it.setFlags(Qt.ItemIsEnabled); self.err_table.setItem(r, c, it)
-        err_lay.addWidget(QLabel("SYSTEM ERRORS")); err_lay.addWidget(self.err_table)
-        self.model_box = QComboBox(); self.model_box.addItems(["gemini-3.1-flash-lite-preview", "gemini-2.0-flash"])
-        up_btn = QPushButton("Switch Model"); up_btn.setObjectName("DashBtn"); up_btn.clicked.connect(self.update_model)
-        err_lay.addWidget(QLabel("AI ENGINE:")); err_lay.addWidget(self.model_box); err_lay.addWidget(up_btn); err_lay.addStretch()
-        self.content_stack.addWidget(err_card)
+        # SUB-PAGE: ONE-TIME DUES
+        one_card = QFrame(); one_card.setObjectName("MainCard"); o_lay = QVBoxLayout(one_card)
+        o_lay.addWidget(QLabel("ONE-TIME PAYMENTS"))
+        self.o_name = QLineEdit(); self.o_name.setPlaceholderText("Description")
+        self.o_amt = QLineEdit(); self.o_amt.setPlaceholderText("Amount")
+        self.o_date = QDateEdit(); self.o_date.setCalendarPopup(True); self.o_date.setDate(datetime.now().date())
+        self.save_o_btn = QPushButton("ADD ONE-TIME DUE"); self.save_o_btn.setObjectName("AddBtn"); self.save_o_btn.clicked.connect(self.save_one_time)
+        
+        for w in (self.o_name, self.o_amt, self.o_date, self.save_o_btn): o_lay.addWidget(w)
+        self.one_list = QListWidget(); o_lay.addWidget(self.one_list)
+        self.content_stack.addWidget(one_card)
 
         main_hbox.addWidget(self.content_stack, 4); self.root_stack.addWidget(main_page)
 
+    # --- VALIDATION HELPERS ---
+    def validate_inputs(self, name, amt, qdate):
+        """ Prevents empty names, non-numeric amounts, or historical dates for future bills. """
+        if not name.strip() or not amt.strip():
+            QMessageBox.warning(self, "Input Error", "Name and Amount cannot be empty.")
+            return False
+        try:
+            if float(amt) <= 0: raise ValueError
+        except:
+            QMessageBox.warning(self, "Input Error", "Enter a valid positive number.")
+            return False
+        if qdate.toPython() < datetime.now().date():
+            QMessageBox.critical(self, "Date Error", "Past dates are not allowed. The system tracks future payments.")
+            return False
+        return True
+
+    # --- CORE LOGIC ---
     def handle_login(self):
+        """ Manages user session. Creates a new user entry if the name doesn't exist. """
         u, p = self.u_in.text().strip(), self.p_in.text().strip()
-        if u in self.users:
-            if self.users[u]["password"] == p:
-                self.current_user = u
-                self.refresh_ui(); self.root_stack.setCurrentIndex(1)
-            else:
-                QMessageBox.warning(self, "Login Failed", "Incorrect password. Please try again.")
+        if not u or not p: return
+        
+        if u not in self.users:
+            self.users[u] = {"password":p, "balance":0.0, "history":[], "vault_bal":0.0, "vault_time":"", "subs":[], "one_times":[], "last_open": datetime.now().isoformat()}
+        elif self.users[u]["password"] != p:
+            QMessageBox.warning(self, "Error", "Wrong password."); return
+        
+        self.current_user = u
+        self.process_auto_bills() # Catch up on missed payments while the app was closed
+        self.users[u]["last_open"] = datetime.now().isoformat()
+        self.save_data(); self.refresh_ui(); self.root_stack.setCurrentIndex(1)
+
+    def handle_logout(self): 
+        self.current_user = None; self.root_stack.setCurrentIndex(0)
+
+    def process_auto_bills(self):
+        """ 
+        Background Logic: Checks if 'Automatic' bills are due or overdue.
+        Uses a while loop to handle cases where the app wasn't opened for months.
+        """
+        user = self.users[self.current_user]
+        now = datetime.now().date()
+        
+        for b in user.get("subs", []):
+            if b.get("mode") == "Automatic":
+                while datetime.fromisoformat(b["next_date"]).date() <= now:
+                    self.pay_item(b, "subs", silent=True)
+
+    def pay_item(self, item, cat, silent=False):
+        """
+        Deducts money from balance and creates a history record.
+        If it's a subscription, it calculates the next billing date.
+        """
+        user = self.users[self.current_user]
+        user["balance"] -= item["amt"]
+        user["history"].insert(0, {"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "amt": item["amt"], "note": f"System/User Paid: {item['name']}"})
+        
+        if cat == "one_times":
+            # Remove from list once paid
+            user["one_times"] = [i for i in user["one_times"] if i["id"] != item["id"]]
         else:
-            QMessageBox.warning(self, "Login Failed", "Username not found. Please create an account.")
-
-    def handle_signup(self):
-        u, p = self.u_in.text().strip(), self.p_in.text().strip()
-        if not u or not p:
-            QMessageBox.critical(self, "Signup Error", "Username and Password cannot be empty.")
-            return
-        if u in self.users:
-            QMessageBox.warning(self, "Signup Error", f"The username '{u}' is already taken.")
-            return
-        self.users[u] = {"password": p, "balance": 0.0, "history": [], "vault_bal": 0.0, "vault_time": ""}
-        self.save_data(); QMessageBox.information(self, "Success", "Account created successfully!")
-
-    def handle_logout(self): self.current_user = None; self.root_stack.setCurrentIndex(0)
+            # Shift the date forward based on cycle
+            days = {"Daily": 1, "Weekly": 7, "Monthly": 30, "Yearly": 365}[item["cycle"]]
+            next_d = datetime.fromisoformat(item["next_date"]) + timedelta(days=days)
+            item["next_date"] = next_d.date().isoformat()
+        
+        if not silent: self.save_data(); self.refresh_ui()
 
     def refresh_ui(self):
+        """ Updates all labels, lists, and colors on the screen based on current data. """
         user = self.users[self.current_user]
         nw = user['balance'] + user.get('vault_bal', 0.0)
+        
         self.net_worth_label.setText(f"Total Net Worth: ₱{nw:,.2f}")
         self.bal_label.setText(f"₱{user['balance']:,.2f}")
+        
+        # Color the balance red if in debt (negative)
         self.bal_label.setStyleSheet(f"font-size: 45px; font-weight: bold; color: {'#EF4444' if user['balance'] < 0 else '#22C55E'};")
-        self.history_list.clear()
-        for i, item in enumerate(user["history"]):
-            li = QListWidgetItem(self.history_list)
-            row = QWidget(); lay = QHBoxLayout(row); lay.setContentsMargins(5, 5, 5, 5)
-            note = item.get('note', ''); is_v = "Vault" in note; is_i = "Initial" in note
-            col = "#EAB308" if is_v else ("#22C55E" if item['mode'] == "plus" else "#EF4444")
-            txt = QLabel(f"<span style='color:#94A3B8;'>{item['time']}</span> | <b>{note}</b> <span style='color:{col};'>(₱{item['amt']:,.2f})</span>")
-            lay.addWidget(txt); lay.addStretch()
-            if not is_v and not is_i:
-                btn_s = "background-color: #334155; border-radius: 4px; padding: 2px;"
-                ed = QPushButton("📝"); ed.setFixedSize(22, 22); ed.setStyleSheet(btn_s); ed.clicked.connect(lambda _, x=i: self.edit_entry(x))
-                dl = QPushButton("✕"); dl.setFixedSize(22, 22); dl.setStyleSheet(btn_s); dl.clicked.connect(lambda _, x=i: self.delete_entry(x))
-                lay.addWidget(ed); lay.addWidget(dl)
-            li.setSizeHint(row.sizeHint()); self.history_list.addItem(li); self.history_list.setItemWidget(li, row)
+        
+        self.due_summary.clear(); self.rec_list.clear(); self.one_list.clear(); self.history_list.clear()
+        now = datetime.now().date()
+        
+        # Populate History
+        for h in user["history"]: 
+            self.history_list.addItem(f"{h['time']} | {h['note']} (₱{h['amt']:,.2f})")
+
+        # Populate Recurring Bills & check for overdue
+        for b in user.get("subs", []):
+            if datetime.fromisoformat(b["next_date"]).date() <= now: 
+                self.due_summary.addItem(f"OVERDUE: {b['name']} (₱{b['amt']})")
+            self.render_row(self.rec_list, b, "subs")
+            
+        # Populate One-Time Dues
+        for o in user.get("one_times", []):
+            if datetime.fromisoformat(o["date"]).date() <= now: 
+                self.due_summary.addItem(f"DUE NOW: {o['name']} (₱{o['amt']})")
+            self.render_row(self.one_list, o, "one_times")
+
+    def render_row(self, list_w, data, cat):
+        """ 
+        Creates a custom widget for each list item containing 
+        the description and action buttons (Pay, Edit, Del). 
+        """
+        item = QListWidgetItem(list_w); row = QWidget(); lay = QHBoxLayout(row)
+        d_key = "next_date" if cat == "subs" else "date"
+        lay.addWidget(QLabel(f"<b>{data['name']}</b> | ₱{data['amt']:,.2f} | Due: {data[d_key]}"))
+        
+        p_btn = QPushButton("Pay Now"); p_btn.setObjectName("ActionBtn")
+        p_btn.clicked.connect(lambda _, x=data, c=cat: self.pay_item(x, c))
+        
+        e_btn = QPushButton("Edit"); e_btn.setObjectName("ActionBtn")
+        e_btn.clicked.connect(lambda _, x=data, c=cat: self.start_edit(x, c))
+        
+        d_btn = QPushButton("Del"); d_btn.setObjectName("DeleteBtn")
+        d_btn.clicked.connect(lambda _, x=data['id'], c=cat: self.delete_item(c, x))
+        
+        lay.addStretch(); lay.addWidget(p_btn); lay.addWidget(e_btn); lay.addWidget(d_btn)
+        item.setSizeHint(row.sizeHint()); list_w.setItemWidget(item, row)
+
+    def save_recurring(self):
+        """ Logic to either append a new bill or update an existing one in the subs list. """
+        if not self.validate_inputs(self.r_name.text(), self.r_amt.text(), self.r_date.date()): return
+        user = self.users[self.current_user]
+        bill = {"id": self.editing_id or str(datetime.now().timestamp()), "name": self.r_name.text(), 
+                "amt": float(self.r_amt.text()), "next_date": self.r_date.date().toPython().isoformat(), 
+                "cycle": self.r_cycle.currentText(), "mode": self.r_mode.currentText()}
+        
+        if self.editing_id: 
+            user["subs"] = [bill if b["id"] == self.editing_id else b for b in user["subs"]]
+        else: 
+            user["subs"].append(bill)
+            
+        self.editing_id = None
+        self.save_r_btn.setText("SAVE RECURRING BILL")
+        self.save_data(); self.refresh_ui()
+        self.r_name.clear(); self.r_amt.clear()
+
+    def save_one_time(self):
+        """ Logic to save one-time payment entries. """
+        if not self.validate_inputs(self.o_name.text(), self.o_amt.text(), self.o_date.date()): return
+        user = self.users[self.current_user]
+        due = {"id": self.editing_id or str(datetime.now().timestamp()), "name": self.o_name.text(), 
+               "amt": float(self.o_amt.text()), "date": self.o_date.date().toPython().isoformat()}
+        
+        if self.editing_id: 
+            user["one_times"] = [due if o["id"] == self.editing_id else o for o in user["one_times"]]
+        else: 
+            user["one_times"].append(due)
+            
+        self.editing_id = None
+        self.save_o_btn.setText("ADD ONE-TIME DUE")
+        self.save_data(); self.refresh_ui()
+        self.o_name.clear(); self.o_amt.clear()
 
     def process_money(self, mode):
-        raw_amt = self.amt_in.text().strip()
-        if not raw_amt:
-            QMessageBox.critical(self, "Invalid Action", "The Amount field is empty. Please enter a value to proceed.")
-            return
+        """ Manual income/expense entry from the dashboard. """
         try:
-            amt = float(raw_amt)
-        except ValueError:
-            QMessageBox.warning(self, "Input Error", f"'{raw_amt}' contains invalid characters. Please enter numbers only.")
-            return
-        if amt <= 0:
-            QMessageBox.information(self, "Calculation Error", "Amount must be greater than zero.")
-            return
-        user = self.users[self.current_user]
-        if mode == "minus" and amt > user["balance"]:
-            reply = QMessageBox.question(self, "Warning", "This will result in a negative balance. Proceed?", QMessageBox.Yes | QMessageBox.No)
-            if reply == QMessageBox.No:
-                return
-        user["balance"] += amt if mode == "plus" else -amt
-        user["history"].insert(0, {"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "mode": mode, "amt": amt, "note": self.item_in.text() or "General"})
-        self.save_data(); self.refresh_ui(); self.amt_in.clear(); self.item_in.clear()
+            amt = float(self.amt_in.text())
+            user = self.users[self.current_user]
+            user["balance"] += amt if mode == "plus" else -amt
+            user["history"].insert(0, {"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "amt": amt, "note": self.item_in.text()})
+            self.save_data(); self.refresh_ui(); self.amt_in.clear(); self.item_in.clear()
+        except: QMessageBox.warning(self, "Error", "Invalid Amount.")
 
     def manage_vault(self):
+        """ 
+        Unique Feature: Locks money for 10 seconds. 
+        If the vault is empty, you can put money in. 
+        If 10s has passed, you can withdraw it back to balance. 
+        """
         user = self.users[self.current_user]
-        if user.get("vault_time"):
-            end = datetime.fromisoformat(user["vault_time"])
-            if datetime.now() >= end:
-                v = user["vault_bal"]; user["balance"] += v
-                user["history"].insert(0, {"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "mode": "plus", "amt": v, "note": "Vault Release"})
-                user["vault_bal"], user["vault_time"] = 0.0, ""; self.save_data(); self.refresh_ui()
-                QMessageBox.information(self, "Vault", f"₱{v:,.2f} released!")
-            else:
-                rem = str(end - datetime.now()).split(".")[0]
-                QMessageBox.warning(self, "Locked", f"Remaining: {rem}")
-            return
-        amt, ok1 = QInputDialog.getDouble(self, "Vault", "Amount:", 0)
-        t_str, ok2 = QInputDialog.getText(self, "Timer", "Time (10s, 5m, 1h):")
-        if ok1 and ok2:
-            m = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800, "M": 2592000, "y": 31536000}
-            try:
-                val = int(''.join(filter(str.isdigit, t_str)))
-                unit = ''.join(filter(str.isalpha, t_str))
-                seconds = val * m.get(unit, 60)
-                user["vault_bal"], user["vault_time"] = amt, (datetime.now() + timedelta(seconds=seconds)).isoformat()
-                user["history"].insert(0, {"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "mode": "none", "amt": amt, "note": "Vault Locked"})
-                self.save_data(); self.refresh_ui()
-            except: pass
+        # Check if the timer has expired to allow withdrawal
+        if user.get("vault_time") and datetime.now() >= datetime.fromisoformat(user["vault_time"]):
+            user["balance"] += user["vault_bal"]; user["vault_bal"], user["vault_time"] = 0.0, ""
+            self.save_data(); self.refresh_ui(); return
+            
+        # Otherwise, offer to lock money
+        amt, ok = QInputDialog.getDouble(self, "Vault", "Amount to lock (10s):", 0, 0, 1000000, 2)
+        if ok and amt > 0:
+            user["vault_bal"], user["vault_time"] = amt, (datetime.now() + timedelta(seconds=10)).isoformat()
+            self.save_data(); self.refresh_ui()
 
-    def edit_entry(self, idx):
-        user = self.users[self.current_user]; item = user["history"][idx]
-        new, ok = QInputDialog.getDouble(self, "Edit", "New Amount:", item["amt"])
-        if ok:
-            diff = new - item["amt"]; user["balance"] += diff if item["mode"] == "plus" else -diff
-            item["amt"] = new; self.save_data(); self.refresh_ui()
+    def start_edit(self, b, cat):
+        """ Populates input forms with existing data to allow modifications. """
+        self.editing_id = b["id"]
+        if cat == "subs":
+            self.r_name.setText(b["name"]); self.r_amt.setText(str(b["amt"]))
+            self.r_date.setDate(datetime.fromisoformat(b["next_date"]).date())
+            self.save_r_btn.setText("UPDATE RECURRING BILL"); self.content_stack.setCurrentIndex(1)
+        else:
+            self.o_name.setText(b["name"]); self.o_amt.setText(str(b["amt"]))
+            self.o_date.setDate(datetime.fromisoformat(b["date"]).date())
+            self.save_o_btn.setText("UPDATE ONE-TIME DUE"); self.content_stack.setCurrentIndex(2)
 
-    def delete_entry(self, idx):
-        user = self.users[self.current_user]; item = user["history"][idx]
-        user["balance"] -= item["amt"] if item["mode"] == "plus" else -item["amt"]
-        user["history"].pop(idx); self.save_data(); self.refresh_ui()
+    def delete_item(self, cat, item_id):
+        """ Removes an item from the user's list and saves. """
+        self.users[self.current_user][cat] = [i for i in self.users[self.current_user][cat] if i["id"] != item_id]
+        self.save_data(); self.refresh_ui()
 
-    def ask_ai(self):
-        txt = self.ai_input.text().strip()
-        if not txt: return
-        self.ai_chat.append(f"<b>You:</b> {txt}")
-        self.worker = AIWorker(self.client, self.current_model, f"Balance: {self.users[self.current_user]['balance']}. User: {txt}")
-        self.worker.finished.connect(lambda r: self.ai_chat.append(f"<b>AI:</b> {r}<br>"))
-        self.worker.start(); self.ai_input.clear()
-
-    def update_model(self): self.current_model = self.model_box.currentText()
-
+# Application Entry Point
 if __name__ == "__main__":
-    app = QApplication(sys.argv); win = MainWindow(); win.show(); sys.exit(app.exec())
+    app = QApplication([]); win = MainWindow(); win.show(); app.exec()
