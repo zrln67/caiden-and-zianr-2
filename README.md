@@ -13,13 +13,11 @@ This is a Python program the helps people track their expense so they dont overs
 - Enter bills and due payments
 
 ## How to Run the program
-1. Open any ide
-2. Download "Budget planer" zip file
-3. extract it
-4. Open terminal
-5. Download Pyside6 library
-6. Open folder
-7. Run the program
+1. Download the files inside Final Project inside the folder code
+2. Put the files inside a folder
+3. Open any ide
+4. Open the folder
+5. Follow the instrunctions inside "how to run"
    
 
 ## Example output
