@@ -1,3 +1,5 @@
+<img width="3400" height="920" alt="github-header-banner" src="https://github.com/user-attachments/assets/03c70027-2f35-4ad5-9e61-19cae5bc815b" />
+
 # Project Title Smart Budget Planner
 
 ## Project Description
@@ -25,16 +27,23 @@ Enter password: 12345
 
 Balance: 20,000
 A. Log transaction
+
 B. transaction history
+
 C. Recurring Bills
+
 D. One-Time Dues
+
 user chooses A
 
 Item name: Bag
+
 Amount: 1,000
 
 A. Add
+
 B. Spend
+
 user chooses B
 
 Your current balance is 19,000
