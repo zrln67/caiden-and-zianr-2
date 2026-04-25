@@ -23,9 +23,11 @@ This is a Python program the helps people track their expense so they dont overs
 
 ## Example output
 Enter account name: test acc
+
 Enter password: 12345
 
 Balance: 20,000
+
 A. Log transaction
 
 B. transaction history
