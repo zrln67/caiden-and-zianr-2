@@ -17,7 +17,7 @@ This is a Python program the helps people track their expense so they dont overs
 ## How to Run the program
 1. Download the the version you want for Smart Budget Planner and extract it
 2. Open any ide
-3. Open the folder
+3. Open the in the current ide you are in folder
 4. Follow the instrunctions inside "how to run"
    
 
