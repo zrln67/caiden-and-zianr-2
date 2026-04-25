@@ -29,5 +29,5 @@ https://github.com/user-attachments/assets/ec23d9e9-00cd-449b-8524-fc887ecd46ea
 
 
 ## Contributors
-- Zian Relon: Type most of the things
-- Caidem Alava: Helped him think what to type 
+- Zian Relon: Made the code and the one that uploads the files in github
+- Caidem Alava: Made the files in github and emotional support
