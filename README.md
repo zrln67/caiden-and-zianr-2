@@ -1,6 +1,6 @@
 <img width="3400" height="920" alt="github-header-banner" src="https://github.com/user-attachments/assets/03c70027-2f35-4ad5-9e61-19cae5bc815b" />
 
-# Project Title Smart Budget Planner
+# Project Title: Smart Budget Planner
 
 ## Project Description
 This is a Python program the helps people track their expense so they dont overspend, saving a lot of money.
