@@ -13,11 +13,10 @@ This is a Python program the helps people track their expense so they dont overs
 - Enter bills and due payments
 
 ## How to Run the program
-1. Download the files inside Final Project inside the folder code
-2. Put the files inside a folder
-3. Open any ide
-4. Open the folder
-5. Follow the instrunctions inside "how to run"
+1. Download the the version you want for Smart Budget Planner and extract it
+2. Open any ide
+3. Open the folder
+4. Follow the instrunctions inside "how to run"
    
 
 ## Example output
