@@ -10,8 +10,7 @@ This is a Python program the helps people track their expense so they dont overs
 - Calculates their updated budget
 - Enter how much your item cost and enter item names
 - Display transaction history
-- You can ask ai for advice
-- Settings for troubleshooting
+- Enter bills and due payments
 
 ## How to Run the program
 1. Open any ide
@@ -19,9 +18,8 @@ This is a Python program the helps people track their expense so they dont overs
 3. extract it
 4. Open terminal
 5. Download Pyside6 library
-6. Download google genai libary
-7. Open folder
-8. Run the program
+6. Open folder
+7. Run the program
    
 
 ## Example output
@@ -31,8 +29,8 @@ Enter password: 12345
 Balance: 20,000
 A. Log transaction
 B. transaction history
-B. AI
---more stuff here soon--
+C. Recurring Bills
+D. One-Time Dues
 user chooses A
 
 Item name: Bag
@@ -40,7 +38,6 @@ Amount: 1,000
 
 A. Add
 B. Spend
-D. Cancel
 user chooses B
 
 Your current balance is 19,000
