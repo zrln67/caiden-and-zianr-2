@@ -22,35 +22,11 @@ This is a Python program the helps people track their expense so they dont overs
    
 
 ## Example output
-Enter account name: test acc
 
-Enter password: 12345
 
-Balance: 20,000
+https://github.com/user-attachments/assets/ec23d9e9-00cd-449b-8524-fc887ecd46ea
 
-A. Log transaction
 
-B. transaction history
-
-C. Recurring Bills
-
-D. One-Time Dues
-
-user chooses A
-
-Item name: Bag
-
-Amount: 1,000
-
-A. Add
-
-B. Spend
-
-user chooses B
-
-Your current balance is 19,000
-
--- Repeats back to menu--
 
 ## Contributors
 - Zian Relon: Type most of the things
